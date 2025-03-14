@@ -1,0 +1,109 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Roles to be assumed by CodePipeline services from the Tools account
+Parameters:
+  CrossAccountPipelineRoleName:
+    Description: The name of the cross account pipeline role
+    Type: String
+  CrossAccountDeployerRoleName:
+    Description: The name of the cross account deployer role
+    Type: String
+  PipelineAccount:
+    Description: AWS AccountId for the pipeline account
+    Type: String
+  S3Bucket:
+    Description: S3 Bucket in Tools Account, which holds the artifacts built by codebuild
+    Type: String
+  CMKARN:
+    Description: ARN of the KMS CMK created in Tools account
+    Type: String
+Resources:
+  CrossAccountPipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${CrossAccountPipelineRoleName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Ref PipelineAccount
+            Action:
+              - sts:AssumeRole
+      Path: /
+  CrossAccountPipelinePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${CrossAccountPipelineRoleName}-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - cloudformation:*
+              - s3:*
+              - iam:PassRole
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - kms:*
+            Resource: !Ref CMKARN
+      Roles:
+        - !Ref CrossAccountPipelineRole
+
+  CrossAccountDeployerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${CrossAccountDeployerRoleName}
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: /
+  CrossAccountDeployerPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${CrossAccountDeployerRoleName}-policy
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - lambda:*
+              - iam:*
+              - cloudformation:*
+              - apigateway:*
+              - ec2:*
+              - imagebuilder:*
+              - logs:*
+              - rds:*
+              - ssm:*
+              - secretsmanager:*
+              - kms:*
+              - cloudwatch:*
+              - route53:*
+              - events:*
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:GetBucketPolicy
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Join ['', ['arn:aws:s3:::', !Ref S3Bucket, '/*']]
+              - !Join ['', ['arn:aws:s3:::', !Ref S3Bucket]]
+      Roles:
+        - !Ref CrossAccountDeployerRole
+
+Outputs:
+  CrossAccountPipelineRoleARN:
+    Value: !GetAtt CrossAccountPipelineRole.Arn
+
+  CrossAccountDeployerRoleARN:
+    Value: !GetAtt CrossAccountDeployerRole.Arn
