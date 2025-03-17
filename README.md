@@ -104,7 +104,6 @@ aws cloudformation deploy \
         CrossAccountPipelineRoleName=<pipeline-role-name> \
         CrossAccountDeployerRoleName=<deployer-role-name> \
         PipelineAccount=<account-number> \
-        S3Bucket: <bucket-name> \
         CMKARN: <cmk-arn>
 ```
 

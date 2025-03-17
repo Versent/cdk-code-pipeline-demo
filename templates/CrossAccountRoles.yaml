@@ -4,17 +4,16 @@ Parameters:
   CrossAccountPipelineRoleName:
     Description: The name of the cross account pipeline role
     Type: String
+    Default: CrossAccountPipelineRole
   CrossAccountDeployerRoleName:
     Description: The name of the cross account deployer role
     Type: String
+    Default: CrossAccountDeployerRole
   PipelineAccount:
     Description: AWS AccountId for the pipeline account
     Type: String
-  S3Bucket:
-    Description: S3 Bucket in Tools Account, which holds the artifacts built by codebuild
-    Type: String
   CMKARN:
-    Description: ARN of the KMS CMK created in Tools account
+    Description: ARN of the KMS CMK created in the Tools account
     Type: String
 Resources:
   CrossAccountPipelineRole:
@@ -95,9 +94,10 @@ Resources:
               - s3:GetBucketPolicy
               - s3:GetObject
               - s3:ListBucket
-            Resource:
-              - !Join ['', ['arn:aws:s3:::', !Ref S3Bucket, '/*']]
-              - !Join ['', ['arn:aws:s3:::', !Ref S3Bucket]]
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'aws:ResourceAccount': !Ref PipelineAccount
       Roles:
         - !Ref CrossAccountDeployerRole
 
